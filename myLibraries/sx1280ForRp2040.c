@@ -1,7 +1,7 @@
 /* Author: Chris Schorn
    Date: 7/23/2024
    Version: 2.0.0
-   Description: Library for sx1280 LoRa and rp2040, implements LoraWAN node functionality
+   Description: Library for sx1280 LoRa and rp2040
    License: Currently No License, but do what you want just don't sue me
             when it doesn't work */
 
