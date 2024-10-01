@@ -32,10 +32,6 @@
     In main, setup tasks and run vTaskStartScheduler.
     In tasks, setup hardware before while(true), and
         run data transfer with hardware in while(true).
-    Mesh network processing will move to the second core
-        to continue in the background if needed
-    Use "back" input from touchscreen to put current
-        task/app in the blocked state and go home screen
     Using task notifications, I can take the 'notification
         value' and convert it to an 32 bit pointer address
 */
