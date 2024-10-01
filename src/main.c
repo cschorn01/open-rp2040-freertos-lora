@@ -247,7 +247,7 @@ void vSx1280Task( void *pvParameters ){
             /* sx1280 Doc says to do before SetTx */
             rp2040Sx1280ClearIrq( deviceRp2040sx1280Pinout ); 
 
-            timeStampHolder = time_us_64( ); /* For LoraWAN operation */
+            timeStampHolder = time_us_64( ); /* For timing operation */
             rp2040Sx1280SetTx( deviceSx1280LoraParameters, deviceRp2040sx1280Pinout );
 
             /* Loop for checking Tx was sent, timed out, breaks if Tx single mode runs long */
@@ -260,7 +260,7 @@ void vSx1280Task( void *pvParameters ){
                 /* Checking IRQ to see if the TxDone bit is high */
                 if( sx1280Irq & 0x01 == 0x01 ){ 
 
-                    /* Using 64 bit timestamp value in microseconds for LoRaWAN timing */
+                    /* Using 64 bit timestamp value in microseconds for timing */
                     txTimeStamp = time_us_64( );
                     printf("IRQ: 0x%X %i \n", *( txReadData + 3 ), i );
                     /* Clear successfully sent message */
@@ -290,13 +290,7 @@ void vSx1280Task( void *pvParameters ){
 
         /* Check that we are ready to receive any type of message
            Currently that the storage array is empty */
-        if( messageStorage[ 0 ].message == 0x00 || isMessageLorawan( messageStorage[ 0 ].message, deviceLorawanParameters.deviceAddress ) ){
-
-            /* Checking the message does not have LoRaWAN device address, so not LoRaWAN */
-            if( !isMessageLorawan( messageStorage[ 0 ].message, deviceLorawanParameters.deviceAddress ) ){
-                /* Setting txTimeStamp to 0, no RX delay for not LoraWAN operation */
-                txTimeStamp = 0;
-            }
+        if( messageStorage[ 0 ].message == 0x00 ){
 
             /* ------------------ rp2040 sx1280 Rx Setup ------------------- */
 
@@ -336,7 +330,7 @@ void vSx1280Task( void *pvParameters ){
                 /* Checking IRQ to see if the RxDone, or rxTxTimeout bits are high */
                 if( sx1280Irq & 0x01 == 0x01 ){ 
 
-                    /* Using 64 bit timestamp value in microseconds for LoRaWAN timing */
+                    /* Using 64 bit timestamp value in microseconds for timing */
                     rxTimeStamp = time_us_64( );
                     printf("Message Sent IRQ: 0x%X %i \n", sx1280Irq, i );
 
@@ -440,25 +434,11 @@ void vUsbIOTask( void *pvParameters ){
                 printf( "Typed Message: 0x%X %c %i\n", *( messageBuffer + i ), *( messageBuffer + i ), i );
             } */
 
-            /* Checking to see if messageBuffer begins with "SD:"
-               Messages begining with "SD:" are SD commands to be sent to vSdCardTask */
-            if( *( messageBuffer ) == 0x53 && *( messageBuffer + 1 ) == 0x44 && *( messageBuffer + 2 ) == 0x3A ){
+            xTaskNotify(
+                xSx1280TaskHandle,                /* TaskHandle_t xTaskToNotify */ 
+                ( uint32_t ) messageBuffer,       /* (int)&buffer[0] */
+                eSetValueWithoutOverwrite );      /* eNotifyAction eAction */
 
-                /* FreeRTOS function updating a receiving task’s notification value */
-                xTaskNotify(
-                    xSdCardTaskHandle,                /* TaskHandle_t xTaskToNotify */ 
-                    ( uint32_t ) messageBuffer,       /* (int)&buffer[0] */
-                    eSetValueWithOverwrite );         /* eNotifyAction eAction */ 
-            }
-            else{ /* Otherwise the message is sent to vSx1280Task */
-
-                /* FreeRTOS function updating a receiving task’s notification value 
-                   Nolan Roth helped pay in marinara*/
-                xTaskNotify(
-                    xSx1280TaskHandle,                /* TaskHandle_t xTaskToNotify */ 
-                    ( uint32_t ) messageBuffer,       /* (int)&buffer[0] */
-                    eSetValueWithoutOverwrite );      /* eNotifyAction eAction */
-            }
             vTaskDelay( 2000 ); /* To allow other tasks time to grab the notification values */
             memset( messageBuffer, 0, 256 ); /* Reassign all values in messageBuffer to 0 */
             messageCounter = 0; /* Reassign messageCounter to 0 to restart input cycle */
