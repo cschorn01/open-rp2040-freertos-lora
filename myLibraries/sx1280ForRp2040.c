@@ -442,19 +442,6 @@ uint8_t rp2040Sx1280getStatus( struct rp2040sx1280Pinout thisRp2040Sx1280Pinout 
     return readData[ 0 ];
 }
 
-bool isMessageLorawan( uint32_t deviceAddress,
-                       uint8_t outboundMessage[ ] ){
-
-    /* Detecting if a message is LoraWAN based on inclusion of the Device Address */
-
-    /* Checking that message contains the 32 bit device address in bytes 1 to 4, index 0 */
-    if( outboundMessage[ 1 ] == ( uint8_t ) ( deviceAddress >> 24 ) && outboundMessage[ 2 ] == ( uint8_t ) ( deviceAddress >> 16 ) && outboundMessage[ 3 ] == ( uint8_t ) ( deviceAddress >> 8 ) && outboundMessage[ 4 ] == ( uint8_t ) ( deviceAddress ) ){
-        return 1;
-    }
-    else{
-        return 0;
-    }
-}
 
 void rp2040Sx1280Reset( struct rp2040Sx1280Pinout thisRp2040Sx1280Pinout  ){
 
@@ -855,26 +842,6 @@ void rp2040Sx1280ClearIrq( struct rp2040Sx1280Pinout thisRp2040Sx1280Pinout ){
 
 /* ----------------------------- rp2040 sx1280 Rx Operation ------------------------------- */
 
-    /* DELAY FOR LORAWAN FUNCTIONALITY, time in microseconds
-       Using if-else so RX1 triggers one second after tx, or RX2 two seconds after tx
-            but not both, we want separate delays and rx for both
-    if( rxCurrentTimeStamp < txMessageTimeStamp + 1000000 ){
-
-        for( i = 0; rxCurrentTimeStamp < txMessageTimeStamp + 1000000 && txMessageTimeStamp != 0; i++ ){
-
-            vTaskDelay( 10 );
-            rxCurrentTimeStamp = time_us_64( );
-        }
-    }
-    else if( rxCurrentTimeStamp > txMessageTimeStamp + 1000000 && rxCurrentTimeStamp < txMessageTimeStamp + 2000000 ){
-
-        for( i = 0; ( rxCurrentTimeStamp > txMessageTimeStamp + 1000000 && rxCurrentTimeStamp < txMessageTimeStamp + 2000000 ) && txMessageTimeStamp != 0; i++ ){
-
-            vTaskDelay( 10 );
-            rxCurrentTimeStamp = time_us_64( );
-        }
-    } */
-
 void rp2040Sx1280SetRx( struct sx1280LoraParameters thisSx1280LoraParameters,
                         struct rp2040Sx1280Pinout thisRp2040Sx1280Pinout ){
 
@@ -904,7 +871,7 @@ void rp2040Sx1280SetRx( struct sx1280LoraParameters thisSx1280LoraParameters,
     //     printf( "Rx IRQ: 0x%x%x", *( readData + 2 ), *( readData + 3 ) );
     // }
 
-// NEEDED FOR LORAWAN OPERATION, RETURN SNR AND RSSISYNC
+// NEEDED FOR OPERATION, RETURN SNR AND RSSISYNC
 uint16_t rp2040Sx1280LoraGetPacketStatus( struct rp2040Sx1280Pinout thisRp2040Sx1280Pinout ){
 
     /* using GETPACKETSTATUS which returns rssiSync, and Signal to Noise Ratio ( SNR )
@@ -1342,7 +1309,7 @@ uint64_t sx1280LoraTx( struct sx1280LoraParameters txSx1280LoraParameters,
         if( *( txReadData + 3 ) != 0x00 ){ /* GETIRQSTATUS TxDone == 1 */
 
             /* Using the current 64 bit timestamp value in microseconds to return for 
-                    LoRaWAN timing */
+                    timing */
             currentTimeStamp = time_us_64( );
             printf("IRQ: 0x%X %i \n", *( txReadData + 3 ), i );
             break;
@@ -1397,7 +1364,7 @@ void sx1280LoraRx( struct sx1280LoraParameters rxSx1280LoraParameters,
     uint8_t rxReadData[ 259 ] = { 0 };
     uint32_t totalSizeOfMessage = 0;
     uint32_t sizeOfMessageInBuffer = 0;
-    uint64_t rxCurrentTimeStamp = 0; /* RPi Pico timestamp for lorawan Rx delay, microseconds */
+    uint64_t rxCurrentTimeStamp = 0; /* RPi Pico timestamp, microseconds */
 
     /* Iterators */
     uint32_t i = 0;
@@ -1424,7 +1391,7 @@ void sx1280LoraRx( struct sx1280LoraParameters rxSx1280LoraParameters,
         printf("Busy after rx SETDIOIRQPARAMS\n");
     }
 
-    /* DELAY FOR LORAWAN FUNCTIONALITY, time in microseconds
+    /* Delay time in microseconds
        Using if-else so RX1 triggers one second after tx, or RX2 two seconds after tx
             but not both, we want separate delays and rx for both */
     if( rxCurrentTimeStamp < txMessageTimeStamp + 1000000 ){
